@@ -1,12 +1,13 @@
-# Hello World
+# Rust Hello World
 
 [![License][license-badge]][license-url]
 
-Mono repo of several implementations of hello world
+## Commands
 
-| Repo                             | Description |
-| -------------------------------- | ----------- |
-| [rust-cli](./rust-cli/README.md) | Rust lang   |
+| Command               | Description          |
+| --------------------- | -------------------- |
+| cargo build --release | Create release build |
+| cargo run             | Run test version     |
 
 ## License
 
