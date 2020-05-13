@@ -1,0 +1,56 @@
+#![deny(warnings)]
+
+extern crate juniper;
+extern crate log;
+use std::env;
+use warp::Filter;
+
+struct Query;
+struct Mutation;
+
+struct Context;
+
+impl juniper::Context for Context {}
+
+#[juniper::object(Context = Context)]
+impl Query {
+    fn hello() -> &'static str {
+        "Hello, world!"
+    }
+}
+
+#[juniper::object(Context = Context)]
+impl Mutation {
+    fn hello(context: &Context, text: String) -> String {
+        format!("hello, {}!", text)
+    }
+}
+
+type Schema = juniper::RootNode<'static, Query, Mutation>;
+
+#[tokio::main]
+async fn main() {
+    if env::var("RUST_LOG").is_err() {
+        env::set_var("RUST_LOG", "info");
+    }
+    env_logger::init();
+    let warp_logger = warp::log("web");
+
+    let schema = Schema::new(Query, Mutation);
+    let state = warp::any().map(move || Context {}).boxed();
+    let graphql_route = warp::path("graphql").and(juniper_warp::make_graphql_filter(schema, state));
+    let playground_route = warp::path("graphql")
+        .and(warp::get2())
+        .and(juniper_warp::playground_filter("/graphql"));
+    let root_route = warp::get2()
+        .and(warp::path::end())
+        .map(|| warp::reply::html("<html><body><a href=\"/graphql\">Graphql</a></body></html>"));
+
+    warp::serve(
+        root_route
+            .or(playground_route)
+            .or(graphql_route)
+            .with(warp_logger),
+    )
+    .run(([127, 0, 0, 1], 3000));
+}
