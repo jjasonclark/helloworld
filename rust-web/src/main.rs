@@ -4,6 +4,13 @@ extern crate log;
 use std::env;
 use warp::Filter;
 
+fn load_config() -> Result<config::Config, config::ConfigError> {
+    let mut settings = config::Config::new();
+    settings.merge(config::File::with_name("config/default"))?;
+    settings.merge(config::File::with_name("config/local").required(false))?;
+    Ok(settings)
+}
+
 #[tokio::main]
 async fn main() {
     if env::var("RUST_LOG").is_err() {
@@ -11,13 +18,7 @@ async fn main() {
     }
     env_logger::init();
 
-    let mut settings = config::Config::new();
-    settings
-        .merge(config::File::with_name("config/default"))
-        .unwrap();
-    settings
-        .merge(config::File::with_name("config/local").required(false))
-        .unwrap();
+    let settings = load_config().unwrap();
     let address = settings.get("server.address").unwrap();
     let port = settings.get("server.port").unwrap();
     let addr = std::net::SocketAddr::new(address, port);
